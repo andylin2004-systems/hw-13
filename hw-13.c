@@ -106,7 +106,7 @@ int read_data()
     FILE *file = open("nyc_pop.bin", O_RDONLY);
     if (errno){
         printf("Error: %s", strerror(errno));
-        return;
+        return 0;
     }
     struct stat fileStat;
     stat("nyc_pop.bin", &fileStat);
@@ -114,7 +114,7 @@ int read_data()
     read(file, boroArray, fileStat.st_size);
     if (errno){
         printf("Error: %s", strerror(errno));
-        return;
+        return 0;
     }
     int i;
     for (i = 0; i < fileStat.st_size / sizeof(struct pop_entry); i++)
