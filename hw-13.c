@@ -3,7 +3,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <string.h>
+#include <sys/stat.h>
+#include <strings.h>
 
 struct pop_entry
 {
@@ -12,13 +13,13 @@ struct pop_entry
     char boro[15];
 };
 
-int countLines(char *string)
+int countLines(char *doc)
 {
     int i = 0;
     int total = 1;
-    while (string[i])
+    while (doc[i])
     {
-        if (string[i] == '\n')
+        if (doc[i] == '\n')
         {
             total++;
         }
@@ -27,19 +28,23 @@ int countLines(char *string)
     return total;
 }
 
-struct pop_entry *createArray(char *string)
+void read_csv()
 {
-    int year, man, bk, qns, bx, si;
+    int year;
+    char doc[1000];
+    FILE *file = open("nyc_pop.csv", O_RDONLY, 0644);
+    read(file, doc, sizeof(doc));
+
     int start = 0;
     char line[100];
     int lineCount = 0;
-    int lineTotal = countLines(string);
-    struct pop_entry *popInfo = malloc(sizeof(struct pop_entry) * countLines(string) * 5);
-    char *addrLineEnd = strchr(string, '\n');
-    int length = addrLineEnd - string;
+    int lineTotal = countLines(doc);
+    struct pop_entry *popInfo = malloc(sizeof(struct pop_entry) * countLines(doc) * 5);
+    char *addrLineEnd = strchr(doc, '\n');
+    int length = addrLineEnd - doc;
     while (addrLineEnd)
     {
-        strncpy(line, string + start, length);
+        strncpy(line, doc + start, length);
         line[length] = '\0';
         sscanf(line, "%d,%d,%d,%d,%d,%d", &year, &(popInfo[lineCount * 5].population), &(popInfo[lineCount * 5 + 1].population), &(popInfo[lineCount * 5 + 2].population), &(popInfo[lineCount * 5 + 3].population), &(popInfo[lineCount * 5 + 4].population));
         popInfo[lineCount * 5].year = year;
@@ -53,11 +58,11 @@ struct pop_entry *createArray(char *string)
         popInfo[lineCount * 5 + 4].year = year;
         strcpy(popInfo[lineCount * 5 + 4].boro, "Staten Island");
         start += length + 1;
-        addrLineEnd = strchr(string + start, '\n');
-        length = addrLineEnd - (string + start);
+        addrLineEnd = strchr(doc + start, '\n');
+        length = addrLineEnd - (doc + start);
         lineCount++;
     }
-    strcpy(line, string + start);
+    strcpy(line, doc + start);
     sscanf(line, "%d,%d,%d,%d,%d,%d", &year, &(popInfo[lineCount * 5].population), &(popInfo[lineCount * 5 + 1].population), &(popInfo[lineCount * 5 + 2].population), &(popInfo[lineCount * 5 + 3].population), &(popInfo[lineCount * 5 + 4].population));
     popInfo[lineCount * 5].year = year;
     strcpy(popInfo[lineCount * 5].boro, "Manhattan");
@@ -69,21 +74,25 @@ struct pop_entry *createArray(char *string)
     strcpy(popInfo[lineCount * 5 + 3].boro, "Bronx");
     popInfo[lineCount * 5 + 4].year = year;
     strcpy(popInfo[lineCount * 5 + 4].boro, "Staten Island");
-    return popInfo;
+
+    FILE *newFile = open("nyc_pop.bin", O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    write(newFile, popInfo, sizeof(struct pop_entry) * countLines(doc) * 5);
 }
 
-int read_csv()
-{
-    int year, man, bk, qns, bx, si;
-    char doc[1000];
-    FILE *file = open("nyc_pop.csv", 0644);
-    read(file, doc, sizeof(doc));
-    struct pop_entry *boroArray = createArray(doc);
-    FILE *newFile = open("nyc_pop.bin", O_CREAT | O_WRONLY, 0644);
-    write(newFile, boroArray, sizeof(boroArray));
+void read_data(){
+    FILE *file = open("nyc_pop.bin", O_RDONLY);
+    struct stat fileStat;
+    stat("nyc_pop.bin", &fileStat);
+    struct pop_entry *boroArray = malloc(fileStat.st_size);
+    read(file, boroArray, fileStat.st_size);
+    int i;
+    for (i = 0; i < fileStat.st_size / sizeof(struct pop_entry); i++){
+        printf("%d: year: %d boro: %s pop: %d\n", i, boroArray[i].year, boroArray[i].boro, boroArray[i].population);
+    }
 }
 
 int main()
 {
     read_csv();
+    read_data();
 }
