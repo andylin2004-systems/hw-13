@@ -79,6 +79,8 @@ int read_csv()
     FILE *file = open("nyc_pop.csv", 0644);
     read(file, doc, sizeof(doc));
     struct pop_entry *boroArray = createArray(doc);
+    FILE *newFile = open("nyc_pop.bin", O_CREAT | O_WRONLY, 0644);
+    write(newFile, boroArray, sizeof(boroArray));
 }
 
 int main()
