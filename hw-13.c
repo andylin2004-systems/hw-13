@@ -32,12 +32,14 @@ void read_csv()
 {
     char doc[1000];
     FILE *file = open("nyc_pop.csv", O_RDONLY, 0644);
-    if (errno){
+    if (errno)
+    {
         printf("Error: %s", strerror(errno));
         return;
     }
     read(file, doc, sizeof(doc));
-    if (errno){
+    if (errno)
+    {
         printf("Error: %s", strerror(errno));
         return;
     }
@@ -88,13 +90,17 @@ void read_csv()
     strcpy(popInfo[(lineCount - 1) * 5 + 4].boro, "Staten Island");
 
     FILE *newFile = open("nyc_pop.bin", O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    if (errno){
+    if (errno)
+    {
         printf("Error: %s", strerror(errno));
+        free(popInfo);
         return;
     }
     write(newFile, popInfo, sizeof(struct pop_entry) * (countLines(doc) - 1) * 5);
-    if (errno){
+    if (errno)
+    {
         printf("Error: %s", strerror(errno));
+        free(popInfo);
         return;
     }
     free(popInfo);
@@ -104,7 +110,8 @@ void read_csv()
 int read_data()
 {
     FILE *file = open("nyc_pop.bin", O_RDONLY);
-    if (errno){
+    if (errno)
+    {
         printf("Error: %s", strerror(errno));
         return 0;
     }
@@ -112,8 +119,10 @@ int read_data()
     stat("nyc_pop.bin", &fileStat);
     struct pop_entry *boroArray = malloc(fileStat.st_size);
     read(file, boroArray, fileStat.st_size);
-    if (errno){
+    if (errno)
+    {
         printf("Error: %s", strerror(errno));
+        free(boroArray);
         return 0;
     }
     int i;
@@ -144,6 +153,7 @@ void add_data()
     if (errno)
     {
         printf("Error: %s", strerror(errno));
+        free(boroArray);
         return;
     }
     close(file);
@@ -152,6 +162,7 @@ void add_data()
     if (errno)
     {
         printf("Error: %s", strerror(errno));
+        free(boroArray);
         return;
     }
     sscanf(input, "%d %s %d", &(boroArray[appendAt].year), boroArray[appendAt].boro, &(boroArray[appendAt].population));
@@ -159,6 +170,7 @@ void add_data()
     if (errno)
     {
         printf("Error: %s", strerror(errno));
+        free(boroArray);
         return;
     }
     close(file);
@@ -177,12 +189,14 @@ void update_data()
     if (errno)
     {
         printf("Error: %s", strerror(errno));
+        free(boroArray);
         return;
     }
     read(file, boroArray, fileStat.st_size);
     if (errno)
     {
         printf("Error: %s", strerror(errno));
+        free(boroArray);
         return;
     }
     close(file);
@@ -207,6 +221,7 @@ void update_data()
         }
         close(file);
     }
+    free(boroArray);
 }
 
 int main(int argc, char *argv[])
