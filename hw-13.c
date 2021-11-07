@@ -45,7 +45,8 @@ void read_csv()
     int length = addrLineEnd - doc;
     while (addrLineEnd)
     {
-        if (lineCount != 0){
+        if (lineCount != 0)
+        {
             strncpy(line, doc + start, length);
             line[length] = '\0';
             sscanf(line, "%d,%d,%d,%d,%d,%d", &year, &(popInfo[(lineCount - 1) * 5].population), &(popInfo[(lineCount - 1) * 5 + 1].population), &(popInfo[(lineCount - 1) * 5 + 2].population), &(popInfo[(lineCount - 1) * 5 + 3].population), &(popInfo[(lineCount - 1) * 5 + 4].population));
@@ -80,10 +81,11 @@ void read_csv()
 
     FILE *newFile = open("nyc_pop.bin", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     write(newFile, popInfo, sizeof(struct pop_entry) * (countLines(doc) - 1) * 5);
+    free(popInfo);
     close(newFile);
 }
 
-void read_data()
+int read_data()
 {
     FILE *file = open("nyc_pop.bin", O_RDONLY);
     struct stat fileStat;
@@ -96,6 +98,8 @@ void read_data()
         printf("%d: year: %d boro: %s pop: %d\n", i, boroArray[i].year, boroArray[i].boro, boroArray[i].population);
     }
     close(file);
+    free(boroArray);
+    return fileStat.st_size / sizeof(struct pop_entry);
 }
 
 void add_data()
@@ -109,19 +113,41 @@ void add_data()
     struct pop_entry *boroArray = malloc(fileStat.st_size + sizeof(struct pop_entry));
     read(file, boroArray, fileStat.st_size);
     close(file);
-
-    printf("%d", fileStat.st_size);
-    int i;
-    for (i = 0; i < fileStat.st_size / sizeof(struct pop_entry); i++)
-    {
-        printf("%d: year: %d boro: %s pop: %d\n", i, boroArray[i].year, boroArray[i].boro, boroArray[i].population);
-    }
-
     int appendAt = fileStat.st_size / sizeof(struct pop_entry);
     file = open("nyc_pop.bin", O_WRONLY | O_TRUNC);
     sscanf(input, "%d %s %d", &(boroArray[appendAt].year), boroArray[appendAt].boro, &(boroArray[appendAt].population));
     write(file, boroArray, fileStat.st_size + sizeof(struct pop_entry));
     close(file);
+    free(boroArray);
+}
+
+void update_data()
+{
+    int arrayLength = read_data();
+    char input[100];
+    int row;
+    struct stat fileStat;
+    stat("nyc_pop.bin", &fileStat);
+    struct pop_entry *boroArray = malloc(fileStat.st_size);
+    FILE *file = open("nyc_pop.bin", O_RDONLY);
+    read(file, boroArray, fileStat.st_size);
+    close(file);
+    printf("Enter row to edit:\n");
+    read(STDIN_FILENO, input, sizeof(input));
+    sscanf(input, "%d", &row);
+    if (row >= arrayLength || row < 0)
+    {
+        printf("Row out of bounds.");
+    }
+    else
+    {
+        printf("Enter info in following format to update: year boro pop:\n");
+        read(STDIN_FILENO, input, sizeof(input));
+        sscanf(input, "%d %s %d", &(boroArray[row].year), boroArray[row].boro, &(boroArray[row].population));
+        file = open("nyc_pop.bin", O_WRONLY | O_TRUNC);
+        write(file, boroArray, fileStat.st_size);
+        close(file);
+    }
 }
 
 int main()
@@ -129,5 +155,7 @@ int main()
     read_csv();
     read_data();
     add_data();
+    read_data();
+    update_data();
     read_data();
 }
