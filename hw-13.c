@@ -32,7 +32,15 @@ void read_csv()
 {
     char doc[1000];
     FILE *file = open("nyc_pop.csv", O_RDONLY, 0644);
+    if (errno){
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     read(file, doc, sizeof(doc));
+    if (errno){
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     close(file);
 
     // start the reading process
@@ -80,7 +88,15 @@ void read_csv()
     strcpy(popInfo[(lineCount - 1) * 5 + 4].boro, "Staten Island");
 
     FILE *newFile = open("nyc_pop.bin", O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (errno){
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     write(newFile, popInfo, sizeof(struct pop_entry) * (countLines(doc) - 1) * 5);
+    if (errno){
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     free(popInfo);
     close(newFile);
 }
@@ -88,10 +104,18 @@ void read_csv()
 int read_data()
 {
     FILE *file = open("nyc_pop.bin", O_RDONLY);
+    if (errno){
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     struct stat fileStat;
     stat("nyc_pop.bin", &fileStat);
     struct pop_entry *boroArray = malloc(fileStat.st_size);
     read(file, boroArray, fileStat.st_size);
+    if (errno){
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     int i;
     for (i = 0; i < fileStat.st_size / sizeof(struct pop_entry); i++)
     {
@@ -108,15 +132,35 @@ void add_data()
     printf("Enter info in following format: year boro pop:\n");
     read(STDIN_FILENO, input, sizeof(input));
     FILE *file = open("nyc_pop.bin", O_RDONLY, 0644);
+    if (errno)
+    {
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     struct stat fileStat;
     stat("nyc_pop.bin", &fileStat);
     struct pop_entry *boroArray = malloc(fileStat.st_size + sizeof(struct pop_entry));
     read(file, boroArray, fileStat.st_size);
+    if (errno)
+    {
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     close(file);
     int appendAt = fileStat.st_size / sizeof(struct pop_entry);
     file = open("nyc_pop.bin", O_WRONLY | O_TRUNC);
+    if (errno)
+    {
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     sscanf(input, "%d %s %d", &(boroArray[appendAt].year), boroArray[appendAt].boro, &(boroArray[appendAt].population));
     write(file, boroArray, fileStat.st_size + sizeof(struct pop_entry));
+    if (errno)
+    {
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     close(file);
     free(boroArray);
 }
@@ -130,7 +174,17 @@ void update_data()
     stat("nyc_pop.bin", &fileStat);
     struct pop_entry *boroArray = malloc(fileStat.st_size);
     FILE *file = open("nyc_pop.bin", O_RDONLY);
+    if (errno)
+    {
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     read(file, boroArray, fileStat.st_size);
+    if (errno)
+    {
+        printf("Error: %s", strerror(errno));
+        return;
+    }
     close(file);
     printf("Enter row to edit:\n");
     read(STDIN_FILENO, input, sizeof(input));
@@ -146,16 +200,42 @@ void update_data()
         sscanf(input, "%d %s %d", &(boroArray[row].year), boroArray[row].boro, &(boroArray[row].population));
         file = open("nyc_pop.bin", O_WRONLY | O_TRUNC);
         write(file, boroArray, fileStat.st_size);
+        if (errno)
+        {
+            printf("Error: %s", strerror(errno));
+            return;
+        }
         close(file);
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    read_csv();
-    read_data();
-    add_data();
-    read_data();
-    update_data();
-    read_data();
+    if (argc > 1)
+    {
+        if (strcmp(argv[1], "-read_csv"))
+        {
+            read_csv();
+        }
+        else if (strcmp(argv[1], "-read_data"))
+        {
+            read_data();
+        }
+        else if (strcmp(argv[1], "-add_data"))
+        {
+            add_data();
+        }
+        else if (strcmp(argv[1], "-update_data"))
+        {
+            update_data();
+        }
+        else
+        {
+            printf("Invalid command line argument.\n-read_csv to read csv file\n-read_data to read data file\n-add_data to add data to data file\n-update_data to update data in data file");
+        }
+    }
+    else
+    {
+        printf("No command line argument found.\n-read_csv to read csv file\n-read_data to read data file\n-add_data to add data to data file\n-update_data to update data in data file");
+    }
 }
